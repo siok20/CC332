@@ -3,6 +3,8 @@
 #include <stdint.h>
 using namespace std;
 
+#define INT_MAX 0x7fff
+
 bool pertenece(int* array,int n, int x){
 	for(int i=0; i<n; i++){
 		if(array[i]==x) return true;
@@ -55,6 +57,9 @@ public:
     pvertice encontrarVertice(int v);
     void insertarAristaNoDirigida(parista);
 
+    bool buscaCircuitoDFS(int visit[], int v, int padrev);
+
+    bool existeCircuito();
 
     //Metodos de apoyo
     parista* aristasAdyacentes(int*, int n);
@@ -261,7 +266,6 @@ void grafo::eliminarAristaNoDirigida(parista a){
     pvertice p1, p2;
     parista a1, a2;
     parista b;
-    int i=0;
 
     p1 = encontrarVertice(a->datoDestino);
     p2 = encontrarVertice(a->datoOrigen);
@@ -339,6 +343,44 @@ bool grafo::existeArista(int x, int y, int peso){
 void grafo::insertarAristaNoDirigida(parista a){
     if(existeArista(a->datoOrigen, a->datoDestino, a->peso)) return;
     insertarAristaNoDirigida(a->datoOrigen, a->datoDestino, a->peso);
+}
+
+bool grafo::buscaCircuitoDFS(int visit[], int v, int padrev){
+    visit[v]=v;
+
+    pvertice p = encontrarVertice(v);
+    parista a;
+
+    a = p->adyacente;
+    while(a != NULL){
+        if(visit[a->datoDestino] == -1){
+            if(buscaCircuitoDFS(visit, a->datoDestino, v)){
+                return true;
+            }
+        }
+        else if(padrev != a->datoDestino) return true;
+
+        a = a->sgteArista;
+    }
+
+    return false;
+}
+
+bool grafo::existeCircuito(){
+
+    //int visit[8];
+    int *visit = new int[numVertices];
+
+    for(int i=0; i<numVertices; i++) visit[i]=-1;
+
+    for(int i=0; i<numVertices; i++)//{
+        if(visit[i]==-1){
+            if(buscaCircuitoDFS(visit, i, i))//{
+                return true;
+           // }
+        //}
+    }
+    return false;
 }
 
 
@@ -467,4 +509,43 @@ grafo grafo::dijkstra(int v){
     return T;   
 }
 
+int main() {
+    grafo g;
+    
+    g.insertarVertice(0);
+    g.insertarVertice(1);
+    g.insertarVertice(2);
+    g.insertarVertice(3);
+    g.insertarVertice(4);
+    g.insertarVertice(5);
+    g.insertarVertice(6);
+    g.insertarVertice(7);
+    
+    g.insertarAristaNoDirigida(0, 6, 53);
+    g.insertarAristaNoDirigida(0, 1, 32);
+	g.insertarAristaNoDirigida(0, 2, 29);
+	g.insertarAristaNoDirigida(4,3,34);
+	g.insertarAristaNoDirigida(5,3,18);
+	g.insertarAristaNoDirigida(7,4,46);
+	g.insertarAristaNoDirigida(5,4,40);
+	g.insertarAristaNoDirigida(0,5,60);
+	g.insertarAristaNoDirigida(6,4,51);
+	g.insertarAristaNoDirigida(7,0,31);
+	g.insertarAristaNoDirigida(7,6,25);
+	g.insertarAristaNoDirigida(7,1,21);
+	
+    
+    
+    g.imprimirGrafo();   
+	cout<<g.existeCircuito(); 
 
+    grafo T;
+    T = g.dijkstra(0);
+
+    
+    T.imprimirGrafo(); 
+    cout<<T.existeCircuito()<<endl;
+    
+    return 0;
+
+}
