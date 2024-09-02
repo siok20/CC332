@@ -3,6 +3,14 @@
 #include <stdint.h>
 using namespace std;
 
+bool pertenece(int* array,int n, int x){
+	for(int i=0; i<n; i++){
+		if(array[i]==x) return true;
+	}
+	return false;
+}
+
+
 /*
 Estructura para las aristas del grafo
 */
@@ -37,4 +45,426 @@ public:
     grafo();
     ~grafo();
 
+    void imprimirGrafo();
+    void insertarVertice(int);
+    bool existeVertice(int);
+    void establecerVisita();
+    void restablecerVisita();
+    bool todosVisitados();
+    void insertarVertice(pvertice);
+    pvertice encontrarVertice(int v);
+    void insertarAristaNoDirigida(parista);
+
+
+    //Metodos de apoyo
+    parista* aristasAdyacentes(int*, int n);
+    int sumPesoCamino(int x, int y, int sum);
+    void eliminarAristaNoDirigida(parista a);
+    void eliminarVertice(int x);
+    bool existeArista(int x, int y, int peso);
+    void insertarAristaNoDirigida(int x, int y, int peso);
+    void insertarArista(int x, int y, int peso);
+    parista aristaMenorPesoCamino(int *vertices, grafo &T, int n);
+    parista aristaMenorPesoCamino(int *vertices, grafo &T, int n, int cota);
+    int *listaVertices();
+
+    //Retorna un arbol con Los menores caminos
+    grafo dijkstra(int v);
 };
+
+grafo::grafo() {
+    pGrafo = NULL;
+    numVertices=0;
+    numAristas=0;
+}
+
+grafo::~grafo() {
+    pvertice p, rp;
+    parista r, ra;
+    p = pGrafo;
+    while (p != NULL) {
+        r = p->adyacente;
+        while (r != NULL) {
+            ra = r;
+            r = r->sgteArista;
+            delete ra;
+        }
+        rp = p;
+        p = p->sgteVertice;
+        delete rp;
+    }
+}
+
+void grafo::imprimirGrafo() {
+    pvertice p;
+    parista a;
+    p = pGrafo;
+    cout<<"------------------------------------------\n"; 
+    cout << "Vert||Aristas" << endl;
+    if (p == NULL)
+        cout << "Grafo vacio" << endl;
+    else{
+        while (p != NULL) {
+            cout << p->datoOrigen << ": ";
+            a = p->adyacente;
+            while (a != NULL) {
+                cout << a->datoDestino<<" " ;
+                a = a->sgteArista;
+            }
+            cout << endl;
+            p = p->sgteVertice;
+        }
+    }
+    cout<<"------------------------------------------\n"; 
+}
+
+void grafo::insertarVertice(int x) {
+    if(existeVertice(x)) return;
+	numVertices++;
+    pvertice p;
+    p = new vertice;
+    p->datoOrigen = x;
+    p->visitado = false;
+    p->adyacente = NULL;
+    p->sgteVertice = pGrafo;
+    pGrafo = p;
+}
+
+bool grafo::existeVertice(int x){
+    pvertice p;
+    p = pGrafo;
+
+    while(p != NULL){
+        if(p->datoOrigen == x) return true;
+        p=p->sgteVertice;
+    }
+    return false;
+}
+
+void grafo::establecerVisita(){
+    pvertice p;
+    p = pGrafo;
+
+    while(p!=NULL){
+        p->visitado = true;
+        p = p->sgteVertice;
+    }
+}
+
+void grafo::restablecerVisita(){
+    pvertice p;
+    p = pGrafo;
+
+    while(p!=NULL){
+        p->visitado = false;
+        p = p->sgteVertice;
+    }
+}
+
+bool grafo::todosVisitados(){
+    pvertice p;
+    p = pGrafo;
+
+    while(p!=NULL){
+        if(!(p->visitado)) return false;
+        p = p->sgteVertice;
+    }
+    return true;
+}
+
+
+void grafo::insertarVertice(pvertice p){
+    int x = p->datoOrigen;
+    insertarVertice(x);
+    
+}
+
+pvertice grafo::encontrarVertice(int v){
+	pvertice p;
+    p = pGrafo;
+    
+	while (p != NULL && p->datoOrigen != v)
+    	p = p->sgteVertice;
+            
+    return p;
+}
+
+
+parista* grafo::aristasAdyacentes(int* vertices, int n){
+	
+	int j = 0;
+	
+	
+	for(int i =0; i<n; i++){
+		pvertice p = encontrarVertice(vertices[i]);
+		parista a;
+
+		a = p->adyacente;
+		
+        while (a != NULL) {
+            if(pertenece(vertices, n, a->datoDestino)){
+            	a = a->sgteArista;
+            	continue;
+			}
+            j++;
+            a = a->sgteArista;
+        }		
+	}
+	
+	parista* franja= new parista[j];	
+	j=0;
+	
+	for(int i =0; i<n; i++){
+		pvertice p = encontrarVertice(vertices[i]);
+		parista a;
+
+		a = p->adyacente;
+        while (a != NULL) {
+            if(pertenece(vertices, n, a->datoDestino)){
+            	a = a->sgteArista;
+            	continue;
+			}
+            franja[j++]=a;
+            a = a->sgteArista;
+        }		
+	}	
+	
+	return franja;
+}
+
+int grafo::sumPesoCamino(int x, int y, int sum){
+    pvertice p = encontrarVertice(x);
+    parista a;
+    a = p->adyacente;
+    p->visitado = true;
+    //printf("%d",x);
+    while(a!=NULL){
+        if(x == y){
+            establecerVisita();
+            return sum;
+        }
+        
+        if(encontrarVertice(a->datoDestino)->visitado){
+            a = a->sgteArista;
+            continue;
+        }
+        sum = sumPesoCamino(a->datoDestino, y, sum + a->peso);
+        if(!todosVisitados()) sum -= a->peso;
+        //printf("%d\n",a->datoDestino);
+        a = a->sgteArista;
+
+    }
+    return sum;
+}
+
+void grafo::eliminarAristaNoDirigida(parista a){
+    pvertice p1, p2;
+    parista a1, a2;
+    parista b;
+    int i=0;
+
+    p1 = encontrarVertice(a->datoDestino);
+    p2 = encontrarVertice(a->datoOrigen);
+
+    a1 = p1->adyacente;
+    a2 = p2->adyacente;
+
+    if(a1->datoDestino == p2->datoOrigen){
+        p1->adyacente = a1->sgteArista;
+    }
+    else{
+        b = a1;
+        a1 = a1->sgteArista;
+        while(a1->datoDestino != p2->datoOrigen && b!= NULL){
+            b = a1;
+            a1 = a1->sgteArista;
+        } 
+        b->sgteArista = a1->sgteArista;
+    }
+
+    if(a2->datoDestino == p1->datoOrigen){
+        p2->adyacente = a2->sgteArista;
+    }
+    else{
+        b = a2;
+        a2 = a2->sgteArista;
+        while(a2->datoDestino != p1->datoOrigen && b!= NULL){
+            b = a2;
+            a2 = a2->sgteArista;
+        } 
+        b->sgteArista = a2->sgteArista;
+    }
+
+    numAristas--;
+
+}
+
+void grafo::eliminarVertice(int x){
+    pvertice v;
+    v = pGrafo;
+
+    if(v->datoOrigen == x){
+        pGrafo = pGrafo->sgteVertice;
+    }
+    else{
+        while((v->sgteVertice)->datoOrigen != x)
+            v = v->sgteVertice;
+        
+        v->sgteVertice = (v->sgteVertice)->sgteVertice;
+    }
+    numVertices--;
+}
+
+bool grafo::existeArista(int x, int y, int peso){
+    pvertice p;
+    parista a;
+    p = pGrafo;
+
+    if (p == NULL)
+        return false;
+    else
+        while (p != NULL) {
+            a = p->adyacente;
+            while (a != NULL) {
+                if(a->datoOrigen == x && a->datoDestino == y && peso == a->peso) return true;
+                a = a->sgteArista;
+            }
+            p = p->sgteVertice;
+        }
+
+    return false;
+}
+
+
+void grafo::insertarAristaNoDirigida(parista a){
+    if(existeArista(a->datoOrigen, a->datoDestino, a->peso)) return;
+    insertarAristaNoDirigida(a->datoOrigen, a->datoDestino, a->peso);
+}
+
+
+void grafo::insertarAristaNoDirigida(int x, int y, int peso) {
+    if(existeArista(x, y, peso)) return;
+    numAristas++;
+	insertarArista(x, y, peso);
+	insertarArista(y, x, peso);
+}
+
+void grafo::insertarArista(int x, int y, int peso) {
+    pvertice p;
+    parista a;
+    p = pGrafo;
+    if (p != NULL) {
+        while (p != NULL && p->datoOrigen != x)
+            p = p->sgteVertice;
+        if (p != NULL) {
+            a = new arista;
+            a->datoOrigen = x;
+            a->datoDestino = y;
+            a->peso = peso; // Le asignamos el peso a la arista
+            a->sgteArista = p->adyacente;
+            p->adyacente = a;
+        }
+    }
+}
+
+parista grafo::aristaMenorPesoCamino(int* vertices,grafo &T, int n){
+
+	return aristaMenorPesoCamino(vertices, T, n, INT_MAX);
+
+}
+
+
+parista grafo::aristaMenorPesoCamino(int* vertices,grafo &T, int n, int cota){
+	//int j = 0;
+	int min =cota;
+    int neoMin;
+	parista aMin = NULL;
+	parista a;
+    int datos[3];
+
+	for(int i =0; i<n; i++){
+		pvertice p = encontrarVertice(vertices[i]);
+	
+		a = p->adyacente;
+        while (a != NULL) {
+            if(pertenece(vertices, n, a->datoDestino)){
+            	a = a->sgteArista;
+            	continue;
+			}
+
+            T.insertarVertice(a->datoDestino);
+            T.insertarAristaNoDirigida(a);
+            neoMin = T.sumPesoCamino(0, a->datoDestino, 0);
+            T.restablecerVisita();
+
+            if(neoMin < min){
+                min = neoMin;
+                datos[0]=a->datoDestino;
+                datos[1]= a->datoOrigen;
+                datos[2]= a->peso;
+            }
+
+            T.eliminarAristaNoDirigida(a);
+            T.eliminarVertice(a->datoDestino);
+
+            
+            a = a->sgteArista;
+        }	
+	}
+
+    parista t;
+    t = new arista;
+    t->datoDestino = datos[0];
+    t->datoOrigen = datos[1];
+    t->peso = datos[2];
+
+    return t;
+
+}
+
+int* grafo::listaVertices(){
+	pvertice p = pGrafo;
+	
+	int * vertices = new int[numVertices];
+	int i=0;
+	while(p != NULL){
+		vertices[i++]=p->datoOrigen;
+		p=p->sgteVertice;
+	}
+	
+	return vertices;
+}
+
+
+/*******************************
+ *****Algoritmo Dijkstra********
+ ******************************/
+grafo grafo::dijkstra(int v){
+    grafo T;
+    pvertice p= pGrafo;
+    parista* franja;
+    parista aMin;
+
+    T.insertarVertice(v);
+
+    do{
+        if(T.numVertices == numVertices) break;
+
+	    int* vertices = T.listaVertices(); 
+	    franja= aristasAdyacentes(vertices, T.numVertices);
+
+	    parista aMin = aristaMenorPesoCamino(vertices, T, T.numVertices);
+        
+        T.imprimirGrafo();
+        //imprimirArista(aMin);
+
+	    v = aMin->datoDestino;
+	    T.insertarVertice(v);
+	    T.insertarAristaNoDirigida(aMin->datoOrigen, aMin->datoDestino, aMin->peso);
+	}
+	while(true);
+
+    return T;   
+}
+
+
