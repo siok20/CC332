@@ -483,7 +483,6 @@ int* grafo::listaVertices(){
  ******************************/
 grafo grafo::dijkstra(int v){
     grafo T;
-    pvertice p= pGrafo;
     parista* franja;
     parista aMin;
 
